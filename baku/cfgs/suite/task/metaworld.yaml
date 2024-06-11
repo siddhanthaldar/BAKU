@@ -1,0 +1,73 @@
+defaults:
+  - _self_
+
+suite: metaworld
+scenes:
+  - basketball
+  - bin_picking
+  - button_press
+  - button_press_topdown
+  - button_press_topdown_wall
+  - button_press_wall
+  - coffee_button
+  - coffee_pull
+  - coffee_push
+  - dial_turn
+  - disassemble
+  - door_lock
+  - door_open
+  - door_unlock
+  - drawer_close
+  - drawer_open
+  - faucet_close
+  - faucet_open
+  - hammer
+  - handle_press
+  - handle_press_side
+  - handle_pull
+  - handle_pull_side
+  - shelf_place
+  - soccer
+  - stick_push
+  - sweep
+  - sweep_into
+  - window_close
+  - window_open
+
+tasks:
+  - basketball: basketball-v2
+  - bin_picking: bin-picking-v2
+  - button_press: button-press-v2
+  - button_press_topdown: button-press-topdown-v2
+  - button_press_topdown_wall: button-press-topdown-wall-v2
+  - button_press_wall: button-press-wall-v2
+  - coffee_button: coffee-button-v2
+  - coffee_pull: coffee-pull-v2
+  - coffee_push: coffee-push-v2
+  - dial_turn: dial-turn-v2
+  - disassemble: disassemble-v2
+  - door_lock: door-lock-v2
+  - door_open: door-open-v2
+  - door_unlock: door-unlock-v2
+  - drawer_close: drawer-close-v2
+  - drawer_open: drawer-open-v2
+  - faucet_close: faucet-close-v2
+  - faucet_open: faucet-open-v2
+  - hammer: hammer-v2
+  - handle_press: handle-press-v2
+  - handle_press_side: handle-press-side-v2
+  - handle_pull: handle-pull-v2
+  - handle_pull_side: handle-pull-side-v2
+  - peg_insert_side: peg-insert-side-v2
+  - peg_unplug_side: peg-unplug-side-v2
+  - plate_slide: plate-slide-v2
+  - plate_slide_back: plate-slide-back-v2
+  - plate_slide_back_side: plate-slide-back-side-v2
+  - plate_slide_side: plate-slide-side-v2
+  - shelf_place: shelf-place-v2
+  - soccer: soccer-v2
+  - stick_push: stick-push-v2
+  - sweep: sweep-v2
+  - sweep_into: sweep-into-v2
+  - window_close: window-close-v2
+  - window_open: window-open-v2

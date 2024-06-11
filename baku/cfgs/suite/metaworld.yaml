@@ -1,0 +1,45 @@
+# @package suite
+defaults:
+  - _self_
+  - task: metaworld
+
+suite: metaworld
+name: 'metaworld'
+
+# task settings
+frame_stack: 1
+action_repeat: 2
+hidden_dim: 256
+
+# train settings
+num_train_steps: 601000
+log_every_steps: 1000
+save_every_steps: 200000
+history: false
+history_len: 10
+
+# eval
+eval_every_steps: 50000
+num_eval_episodes: 10
+eval_history_len: 5
+
+# obs_keys
+pixel_keys: ['pixels']
+proprio_key: ''
+feature_key: 'features'
+
+# snapshot
+save_snapshot: true
+
+task_make_fn:
+  _target_: suite.metaworld.make
+  scenes: ${suite.task.scenes}
+  tasks: ${suite.task.tasks}
+  frame_stack: ${suite.frame_stack}
+  action_repeat: ${suite.action_repeat}
+  seed: ${seed}
+  height: 84
+  width: 84
+  max_episode_len: ??? # to be specified later
+  max_state_dim: ??? # to be specified later
+  eval: ${eval}

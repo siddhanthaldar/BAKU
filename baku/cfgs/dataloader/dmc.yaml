@@ -1,0 +1,14 @@
+bc_dataset:
+  _target_: read_data.dmc.BCDataset
+  path: "${root_dir}/expert_demos/dmc"
+  tasks: ${suite.task.tasks}
+  num_demos_per_task: ${num_demos_per_task}
+  obs_type: ${obs_type}
+  history: ${suite.history}
+  history_len: ${suite.history_len}
+  prompt: ${prompt}
+  temporal_agg: ${temporal_agg}
+  num_queries: ${num_queries}
+  img_size: 84
+  store_actions: true
+  pixel_keys: ${suite.pixel_keys}

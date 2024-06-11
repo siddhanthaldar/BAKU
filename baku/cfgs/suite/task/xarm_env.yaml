@@ -1,0 +1,42 @@
+defaults:
+  - _self_
+
+suite: xarm_env
+tasks:
+  # Scene 1
+  - fetch_glass_from_rack_higher_variation
+  - fetch_towel_from_rack
+  - fetch_tea_from_rack
+  - fetch_vitamin_bottle_from_rack
+  - pick_blue_mug
+  - pick_light_blue_bowl
+  - pick_orange_from_bowl
+  - pick_coffee_bag
+  - pick_starch_box
+  - pick_blue_plate
+  - pick_white_plate
+  - pick_black_plate
+  - open_oven_door_higher_variation
+  - close_oven_door
+  - place_glass_on_rack
+  - wipe_towel
+  - lift_pan_lid
+  - put_coke_can_in_basket
+  - put_cream_cheese_in_basket
+  - put_orange_into_bowl
+  - put_peach_into_bowl
+
+  # Scene 2
+  - fridge_put_tea_in_door
+  - fridge_put_yoghurt_in_door
+  - fridge_put_ketchup_bottle_inside
+  - fridge_put_tomato_can_inside
+  - fridge_take_tea_out_from_door
+  - fridge_take_tomato_can_out
+  - fridge_take_vitamin_water_out
+  - fridge_take_yoghurt_out_from_door
+  - fridge_fetch_knife_from_organizer
+
+  # # long horizon
+  # - set_up_table
+  # - put_fruits_in_basket

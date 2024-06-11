@@ -1,0 +1,43 @@
+# @package suite
+defaults:
+  - _self_
+  - task: dmc
+
+suite: dmc
+name: 'dmc'
+
+# task settings
+frame_stack: 1
+action_repeat: 2
+hidden_dim: 256
+
+# train settings
+num_train_steps: 2001000
+log_every_steps: 1000
+save_every_steps: 250000
+history: false
+history_len: 3
+
+# eval
+eval_every_steps: 200000
+num_eval_episodes: 10
+eval_history_len: 3
+
+# obs_keys
+pixel_keys: ['pixels']
+proprio_key: ''
+feature_key: 'features'
+
+# snapshot
+save_snapshot: true
+
+task_make_fn:
+  _target_: suite.dmc.make
+  names: ${suite.task.tasks}
+  frame_stack: ${suite.frame_stack}
+  action_repeat: ${suite.action_repeat}
+  seed: ${seed}
+  max_episode_len: ??? # to be specified later
+  max_state_dim: ??? # to be specified later
+  max_action_dim: ??? # to be specified later
+  eval: ${eval}

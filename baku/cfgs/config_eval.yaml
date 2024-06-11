@@ -1,0 +1,53 @@
+defaults:
+  - _self_
+  - agent: baku
+  - suite: libero
+  - dataloader: libero
+  - override hydra/launcher: submitit_local
+
+# Root Dir
+root_dir: "/home/siddhant/github/retrieval"
+# root_dir: /media/newhdd/projects/scaling_polytask # siddhant
+
+# misc
+seed: 2
+device: cuda
+save_video: true
+save_train_video: false
+use_tb: true
+batch_size: 64
+
+# experiment
+obs_type: "pixels" # pixels, features
+num_demos_per_task: 50
+encoder_type: 'resnet' # base, resnet
+policy_type: 'gpt' # mlp, gpt
+policy_head: deterministic # deterministic, gmm, bet, diffusion, vqbet
+use_proprio: true
+use_language: true
+use_actions: false
+eval: true
+prompt: text # text, goal, intermediate_goal
+experiment: eval
+experiment_label: ${policy_head}
+
+# action chunking
+temporal_agg: true # aggregate actions over time
+num_queries: 10
+
+# expert dataset
+expert_dataset: ${dataloader.bc_dataset}
+
+# Load weights
+bc_weight: path/to/weight
+
+hydra:
+  run:
+    dir: ./exp_local/eval/${now:%Y.%m.%d}_${experiment}/${experiment_label}/${now:%H%M%S}_hidden_dim_${suite.hidden_dim}
+  sweep:
+    dir: ./exp_local/${now:%Y.%m.%d}/${now:%H%M%S}
+    subdir: ${hydra.job.num}
+  launcher:
+    tasks_per_node: 1
+    nodes: 1
+    submitit_folder: ./exp_local/${now:%Y.%m.%d}/${now:%H%M%S}_${experiment}/.slurm

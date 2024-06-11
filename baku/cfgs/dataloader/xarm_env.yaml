@@ -1,0 +1,20 @@
+bc_dataset:
+  _target_: read_data.xarm_env.BCDataset
+  path: ${root_dir}/expert_demos/xarm_env_aa_may8
+  # path: ${root_dir}/expert_demos/xarm_env
+  tasks: ${suite.task.tasks}
+  num_demos_per_task: ${num_demos_per_task}
+  obs_type: ${obs_type}
+  history: ${suite.history}
+  history_len: ${suite.history_len}
+  prompt: ${prompt}
+  temporal_agg: ${temporal_agg}
+  num_queries: ${num_queries}
+  img_size: 128
+  action_after_steps: ${suite.action_after_steps}
+  intermediate_goal_step: 30
+  store_actions: true
+  pixel_keys: ${suite.pixel_keys}
+  subsample: 5
+  skip_first_n: 0
+  relative_actions: true
