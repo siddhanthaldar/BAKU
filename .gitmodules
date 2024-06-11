@@ -1,0 +1,8 @@
+[submodule "Metaworld"]
+	path = Metaworld
+	url = https://github.com/siddhanthaldar/Metaworld.git
+	branch = baku
+[submodule "Open-Teach"]
+	path = Open-Teach
+	url = https://github.com/siddhanthaldar/Open-Teach.git
+	branch = baku
