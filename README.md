@@ -1,6 +1,6 @@
 # BAKU: An Efficient Transformer for Multi-Task Policy Learning
 
-This is a repository containing the code for the paper [BAKU: An Efficient Transformer for Multi-Task Policy Learning]().
+This is a repository containing the code for the paper [BAKU: An Efficient Transformer for Multi-Task Policy Learning](https://arxiv.org/abs/2406.07539).
 
 ![intro](https://github.com/siddhanthaldar/baku-release/assets/25313941/7df30d79-6864-4b39-bd33-55376829b28e)
 
