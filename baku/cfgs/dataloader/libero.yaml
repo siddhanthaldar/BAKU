@@ -1,7 +1,7 @@
 bc_dataset:
   _target_: read_data.libero.BCDataset
-  path: "${root_dir}/expert_demos/libero_with_langemb"
-  # path: "${root_dir}/expert_demos/libero"
+  # path: "${root_dir}/expert_demos/libero_with_langemb"
+  path: "${root_dir}/expert_demos/libero"
   suite: ${suite.task.suite}
   scenes: ${suite.task.scenes}
   tasks: ${suite.task.tasks}
