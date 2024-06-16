@@ -16,7 +16,7 @@ If you find this work useful, please cite the paper using the following bibtex:
 ```
 @article{haldar2024baku,
   title={BAKU: An Efficient Transformer for Multi-Task Policy Learning},
-  author={Haldar, Siddhant and Peng, Zhuorang and Pinto, Lerrel},
+  author={Haldar, Siddhant and Peng, Zhuoran and Pinto, Lerrel},
   journal={arXiv preprint arXiv:2406.07539},
   year={2024}
 }
