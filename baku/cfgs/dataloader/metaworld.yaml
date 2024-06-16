@@ -1,12 +1,10 @@
 bc_dataset:
   _target_: read_data.metaworld.BCDataset
   path: '${root_dir}/expert_demos'
-  # task_name: ${task_name}
   suite: ${suite.task.suite}
   scenes: ${suite.task.scenes}
   tasks: ${suite.task.tasks}
   num_demos_per_task: ${num_demos_per_task}
-  # num_demos: 1
   obs_type: ${obs_type}
   history: ${suite.history}
   history_len: ${suite.history_len}

@@ -1,7 +1,6 @@
 bc_dataset:
   _target_: read_data.xarm_env.BCDataset
-  path: ${root_dir}/expert_demos/xarm_env_aa_may8
-  # path: ${root_dir}/expert_demos/xarm_env
+  path: ${root_dir}/expert_demos/xarm_env
   tasks: ${suite.task.tasks}
   num_demos_per_task: ${num_demos_per_task}
   obs_type: ${obs_type}
