@@ -4,7 +4,7 @@ defaults:
 suite: xarm_env
 tasks:
   # Scene 1
-  - fetch_glass_from_rack_higher_variation
+  - fetch_glass_from_rack
   - fetch_towel_from_rack
   - fetch_tea_from_rack
   - fetch_vitamin_bottle_from_rack
@@ -16,7 +16,7 @@ tasks:
   - pick_blue_plate
   - pick_white_plate
   - pick_black_plate
-  - open_oven_door_higher_variation
+  - open_oven_door
   - close_oven_door
   - place_glass_on_rack
   - wipe_towel
