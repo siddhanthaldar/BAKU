@@ -37,6 +37,3 @@ tasks:
   - fridge_take_yoghurt_out_from_door
   - fridge_fetch_knife_from_organizer
 
-  # # long horizon
-  # - set_up_table
-  # - put_fruits_in_basket
