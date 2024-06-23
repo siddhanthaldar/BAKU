@@ -27,6 +27,5 @@ temporal_agg: ${temporal_agg}
 max_episode_len: ${suite.task_make_fn.max_episode_len}
 num_queries: ${num_queries}
 use_language: ${use_language}
-use_actions: ${use_actions}
 prompt: ${prompt}
 film: true

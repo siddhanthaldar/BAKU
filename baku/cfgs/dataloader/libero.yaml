@@ -12,5 +12,4 @@ bc_dataset:
   temporal_agg: ${temporal_agg}
   num_queries: ${num_queries}
   img_size: 128
-  subsample: 10
   store_actions: true

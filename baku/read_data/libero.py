@@ -23,7 +23,6 @@ class BCDataset(IterableDataset):
         temporal_agg,
         num_queries,
         img_size,
-        subsample,
         intermediate_goal_step=50,
         store_actions=False,
     ):
@@ -31,14 +30,8 @@ class BCDataset(IterableDataset):
         self._prompt = prompt
         self._history = history
         self._history_len = history_len if history else 1
-        self.subsample = subsample
         self.img_size = img_size
         self.intermediate_goal_step = intermediate_goal_step
-
-        # intermediate steps for inverse model
-        self.inverse = True
-        self.inverse_step_gap = 50  # 5
-        self.num_intermediate_steps = 1  # 7
 
         # temporal_aggregation
         self._temporal_agg = temporal_agg
@@ -212,15 +205,6 @@ class BCDataset(IterableDataset):
             else:
                 sampled_action = actions[sample_idx : sample_idx + self._history_len]
 
-            # intermediate steps for inverse model
-            if self.inverse:
-                intermediate_frames = []
-                for i in range(1, self.num_intermediate_steps + 1):
-                    idx = sample_idx + i * self.inverse_step_gap
-                    idx = min(idx, len(observations["pixels"]) - 1)
-                    intermediate_frames.append(self.aug(observations["pixels"][idx]))
-                intermediate_frames = torch.stack(intermediate_frames)
-
             # prompt
             if self._prompt == "text":
                 return {
@@ -230,9 +214,6 @@ class BCDataset(IterableDataset):
                         sampled_proprioceptive_state
                     ),
                     "actions": self.preprocess["actions"](sampled_action),
-                    "intermediate_frames": intermediate_frames
-                    if self.inverse
-                    else None,
                     "task_emb": task_emb,
                 }
             elif self._prompt == "goal":
@@ -263,9 +244,6 @@ class BCDataset(IterableDataset):
                         prompt_proprioceptive_state
                     ),
                     "prompt_actions": self.preprocess["actions"](prompt_action),
-                    "intermediate_frames": intermediate_frames
-                    if self.inverse
-                    else None,
                     "task_emb": task_emb,
                 }
             elif self._prompt == "intermediate_goal":
@@ -303,9 +281,6 @@ class BCDataset(IterableDataset):
                         prompt_proprioceptive_state
                     ),
                     "prompt_actions": self.preprocess["actions"](prompt_action),
-                    "intermediate_frames": intermediate_frames
-                    if self.inverse
-                    else None,
                     "task_emb": task_emb,
                 }
 

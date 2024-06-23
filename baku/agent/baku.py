@@ -185,7 +185,6 @@ class BCAgent:
         num_queries,
         prompt,
         use_language,
-        use_actions,
         film,
     ):
         self.device = device
@@ -207,7 +206,6 @@ class BCAgent:
         self.use_language = use_language
         self.language_proj_type = "mlp"  # mlp or identity
         self.prompt = prompt
-        self.use_actions = use_actions  # only for the prompt
         self.film = film
 
         # language
@@ -332,16 +330,6 @@ class BCAgent:
                 if p.requires_grad
             )
 
-        # projector for actions
-        if self.use_actions:
-            self.action_projector = MLP(
-                self._act_dim, hidden_channels=[self.repr_dim, self.repr_dim]
-            ).to(device)
-            self.action_projector.apply(utils.weight_init)
-            model_size += sum(
-                p.numel() for p in self.action_projector.parameters() if p.requires_grad
-            )
-
         if policy_type == "mlp":
             repr_mult_factor = len(self.pixel_keys) if obs_type == "pixels" else 1
             if use_proprio:
@@ -396,11 +384,6 @@ class BCAgent:
             self.language_opt = torch.optim.AdamW(
                 self.language_projector.parameters(), lr=lr, weight_decay=1e-4
             )
-        # action projector
-        if self.use_actions:
-            self.action_opt = torch.optim.AdamW(
-                self.action_projector.parameters(), lr=lr, weight_decay=1e-4
-            )
         # actor
         self.actor_opt = torch.optim.AdamW(
             self.actor.parameters(), lr=lr, weight_decay=1e-4
@@ -444,8 +427,6 @@ class BCAgent:
                 self.language_projector.train(training)
             if self.obs_type == "pixels" and self.use_proprio:
                 self.proprio_projector.train(training)
-            if self.use_actions:
-                self.action_projector.train(training)
             self.actor.train(training)
         else:
             if self.separate_encoders:
@@ -457,8 +438,6 @@ class BCAgent:
                 self.language_projector.eval()
             if self.obs_type == "pixels" and self.use_proprio:
                 self.proprio_projector.eval()
-            if self.use_actions:
-                self.action_projector.eval()
             self.actor.eval()
 
     def buffer_reset(self):
@@ -532,10 +511,6 @@ class BCAgent:
         if self.use_language:
             self.language_opt = torch.optim.AdamW(
                 self.language_projector.parameters(), lr=self.lr, weight_decay=1e-4
-            )
-        if self.use_actions:
-            self.action_opt = torch.optim.AdamW(
-                self.action_projector.parameters(), lr=self.lr, weight_decay=1e-4
             )
         params = list(self.actor.parameters())
         self.actor_opt = torch.optim.AdamW(
@@ -645,12 +620,6 @@ class BCAgent:
                     ).float()
                     proprio = self.proprio_projector(proprio)
                     prompt_features.append(proprio)
-                if self.use_actions:
-                    action = torch.as_tensor(
-                        prompt[f"prompt_actions"], device=self.device
-                    ).float()
-                    action = self.action_projector(action)
-                    prompt_features.append(action)
             else:
                 prompt_feat = torch.as_tensor(
                     prompt[f"prompt_{self.feature_key}"], device=self.device
@@ -814,10 +783,6 @@ class BCAgent:
                     proprio = data[f"prompt_{self.proprio_key}"].float()
                     proprio = self.proprio_projector(proprio)
                     prompt_features.append(proprio)
-                if self.use_actions:
-                    prompt_action = data[f"prompt_actions"].float()
-                    prompt_action = self.action_projector(prompt_action)
-                    prompt_features.append(prompt_action)
             else:
                 prompt_feat = data[f"prompt_{self.feature_key}"].float()
                 if self.train_encoder:
@@ -864,8 +829,6 @@ class BCAgent:
                 self.proprio_opt.step()
             if self.use_language:
                 self.language_opt.step()
-            if self.use_actions:
-                self.action_opt.step()
             self.actor_opt.step()
 
             if self.policy_head == "diffusion" and step % 10 == 0:
@@ -912,9 +875,6 @@ class BCAgent:
         if self.use_language:
             model_keys += ["language_projector"]
             opt_keys += ["language_opt"]
-        if self.use_actions:
-            model_keys += ["action_projector"]
-            opt_keys += ["action_opt"]
         # models
         payload = {
             k: self.__dict__[k].state_dict() for k in model_keys if k != "encoder"
@@ -936,7 +896,6 @@ class BCAgent:
         others = [
             "use_proprio",
             "use_language",
-            "use_actions",
             "max_episode_len",
         ]
         payload.update({k: self.__dict__[k] for k in others})
@@ -949,8 +908,6 @@ class BCAgent:
             model_keys += ["proprio_projector"]
         if self.use_language:
             model_keys += ["language_projector"]
-        if self.use_actions:
-            model_keys += ["action_projector"]
         for k in model_keys:
             if k == "encoder" and self.separate_encoders:
                 for key in self.pixel_keys:
@@ -982,8 +939,6 @@ class BCAgent:
                 opt_keys += ["proprio_opt"]
             if self.use_language:
                 opt_keys += ["language_opt"]
-            if self.use_actions:
-                opt_keys += ["action_opt"]
             for k in opt_keys:
                 self.__dict__[k] = payload[k]
         self.train(True)

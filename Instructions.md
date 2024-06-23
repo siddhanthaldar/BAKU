@@ -44,7 +44,7 @@ python train.py agent=baku suite=libero dataloader=libero suite/task=libero_90 s
 ```
 - To train BAKU on Meta-World, use the following command.
 ```
-python train.py agent=baku suite=metaworld dataloader=metaworld suite.hidden_dim=256
+python train.py agent=baku suite=metaworld dataloader=metaworld suite.hidden_dim=256 use_proprio=false
 ```
 - To train BAKU on DMControl, use the following command.
 ```

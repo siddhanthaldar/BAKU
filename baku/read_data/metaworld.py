@@ -24,7 +24,6 @@ class BCDataset(IterableDataset):
         temporal_agg,
         num_queries,
         img_size,
-        subsample,
         intermediate_goal_step=30,
         store_actions=False,
     ):
@@ -32,7 +31,6 @@ class BCDataset(IterableDataset):
         self._prompt = prompt
         self._history = history
         self._history_len = history_len if history else 1
-        self.subsample = subsample if self._prompt == "episode" else 1
         self._img_size = img_size
         self._intermediate_goal_step = intermediate_goal_step
 
