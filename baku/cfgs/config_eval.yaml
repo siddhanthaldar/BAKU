@@ -6,8 +6,7 @@ defaults:
   - override hydra/launcher: submitit_local
 
 # Root Dir
-root_dir: "/home/siddhant/github/retrieval"
-# root_dir: /media/newhdd/projects/scaling_polytask # siddhant
+root_dir: /path/to/repo/BAKU
 
 # misc
 seed: 2

@@ -1,0 +1,24 @@
+# @package agent
+_target_: agent.mtact.Agent
+obs_shape: ??? # to be specified later
+action_shape: ??? # to be specified later
+device: ${device}
+use_tb: ${use_tb}
+lr: 1e-5
+num_queries: ${num_queries}
+kl_weight: 10
+hidden_dim: 512
+dim_feedforward: 3200
+lr_backbone: 1e-4
+backbone: resnet18
+enc_layers: 4
+dec_layers: 1
+nheads: 8
+use_proprio: ${use_proprio}
+pixel_keys: ${suite.pixel_keys}
+proprio_key: ${suite.proprio_key}
+feature_key: ${suite.feature_key}
+temporal_agg: ${temporal_agg}
+episode_len: ${suite.task_make_fn.max_episode_len}
+multitask: true
+obs_type: ${obs_type}
