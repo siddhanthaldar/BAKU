@@ -48,7 +48,7 @@ python train.py agent=baku suite=metaworld dataloader=metaworld suite.hidden_dim
 ```
 - To train BAKU on DMControl, use the following command.
 ```
-python train.py agent=baku suite=dm_control dataloader=dm_control suite.hidden_dim=256 obs_type=features
+python train.py agent=baku suite=dm_control dataloader=dm_control suite.hidden_dim=256 obs_type=features use_proprio=false
 ```
 
 ## Evaluate BAKU

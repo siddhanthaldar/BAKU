@@ -75,6 +75,7 @@ class Agent:
             "state_dim": self.proprioceptive_dim,
             "action_dim": action_shape[0],
             "multitask": self.multitask,
+            "obs_type": self.obs_type,
         }
 
         # actor
@@ -251,7 +252,7 @@ class Agent:
 
         if self.obs_type == "pixels":
             observation = observation / 255.0
-            proprioceptive = proprioceptive[:, 0]
+        proprioceptive = proprioceptive[:, 0]
 
         # forward pass
         output = self.actor(

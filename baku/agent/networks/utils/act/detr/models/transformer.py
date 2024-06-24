@@ -31,6 +31,7 @@ class Transformer(nn.Module):
         activation="relu",
         normalize_before=False,
         return_intermediate_dec=False,
+        obs_type="pixels",
     ):
         super().__init__()
 
@@ -57,6 +58,7 @@ class Transformer(nn.Module):
 
         self.d_model = d_model
         self.nhead = nhead
+        self.obs_type = obs_type
 
     def _reset_parameters(self):
         for p in self.parameters():
@@ -81,7 +83,6 @@ class Transformer(nn.Module):
             src = src.flatten(2).permute(2, 0, 1)
             pos_embed = pos_embed.flatten(2).permute(2, 0, 1).repeat(1, bs, 1)
             query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
-            # mask = mask.flatten(1)
 
             additional_pos_embed = additional_pos_embed.unsqueeze(1).repeat(
                 1, bs, 1
@@ -96,10 +97,11 @@ class Transformer(nn.Module):
 
             src = torch.cat([addition_input, src], axis=0)
         else:
-            assert len(src.shape) == 3
-            # src = src[:, None]
+            if self.obs_type == "pixels":
+                assert len(src.shape) == 3
+            elif self.obs_type == "features":
+                src = src[:, None]
 
-            # # assert len(src.shape) == 3 #########
             # flatten NxHWxC to HWxNxC
             bs, hw, c = src.shape
             src = src.permute(1, 0, 2)
@@ -415,6 +417,7 @@ def build_transformer(args):
         num_decoder_layers=args.dec_layers,
         normalize_before=args.pre_norm,
         return_intermediate_dec=True,
+        obs_type=args.obs_type,
     )
 
 

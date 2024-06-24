@@ -130,11 +130,7 @@ def build_ACT_model_and_optimizer(args_override, device):
     for k, v in args_override.items():
         setattr(args, k, v)
 
-    # # Add dropout
-    # args.dropout = 0.5
-
     model = build_ACT_model(args).to(device)
-    # model.cuda()
 
     param_dicts = [
         {

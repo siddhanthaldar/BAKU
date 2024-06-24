@@ -50,6 +50,7 @@ class DETRVAE(nn.Module):
         num_queries,
         camera_names,
         multitask=False,
+        obs_type="pixels",
     ):
         """Initializes the model.
         Parameters:
@@ -66,6 +67,7 @@ class DETRVAE(nn.Module):
         self.transformer = transformer
         self.encoder = encoder
         self.multitask = multitask
+        self.obs_type = obs_type
         hidden_dim = transformer.d_model  # 512
         self.action_head = nn.Linear(hidden_dim, action_dim)
         self.is_pad_head = nn.Linear(hidden_dim, 1)
@@ -76,15 +78,13 @@ class DETRVAE(nn.Module):
             )
             self.backbones = nn.ModuleList(backbones)
             self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
-            # self.input_proj_robot_state = nn.Linear(14, hidden_dim)
         else:
-            # input_dim = 14 + 7 # robot_state + env_state
             self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
-            self.input_proj_env_state = nn.Linear(state_dim / 2, hidden_dim) ########
-            # self.input_proj_robot_state = nn.Linear(14, hidden_dim)
-            # self.input_proj_env_state = nn.Linear(7, hidden_dim)
-            self.pos = torch.nn.Embedding(2, hidden_dim) ########
-            # self.pos = torch.nn.Embedding(1, hidden_dim)  ########
+            if obs_type == "pixels":
+                self.input_proj_env_state = nn.Linear(state_dim / 2, hidden_dim)
+                self.pos = torch.nn.Embedding(2, hidden_dim)
+            elif obs_type == "features":
+                self.pos = torch.nn.Embedding(1, hidden_dim)
             self.backbones = None
 
         # encoder extra parameters
@@ -96,8 +96,6 @@ class DETRVAE(nn.Module):
         self.encoder_joint_proj = nn.Linear(
             state_dim, hidden_dim
         )  # project qpos to embedding
-        # self.encoder_action_proj = nn.Linear(14, hidden_dim) # project action to embedding
-        # self.encoder_joint_proj = nn.Linear(14, hidden_dim)  # project qpos to embedding
         self.latent_proj = nn.Linear(
             hidden_dim, self.latent_dim * 2
         )  # project hidden state to latent std, var
@@ -172,7 +170,6 @@ class DETRVAE(nn.Module):
             all_cam_pos = []
             for cam_id, cam_name in enumerate(self.camera_names):
                 features, pos = self.backbones[0](image[:, cam_id])  # HARDCODED
-                # features, pos = self.backbones[cam_id](image[:, cam_id])
                 features = features[0]  # take the last layer feature
                 pos = pos[0]
                 all_cam_features.append(self.input_proj(features))
@@ -193,12 +190,14 @@ class DETRVAE(nn.Module):
                 task_emb=task_emb,
             )[
                 0
-            ]  # [-1]
+            ]
         else:
             qpos = self.input_proj_robot_state(qpos)
-            env_state = self.input_proj_env_state(env_state) ###########
-            transformer_input = torch.cat([qpos, env_state], axis=1)  # seq length = 2 ##########
-            # transformer_input = qpos
+            if self.obs_type == "pixels":
+                env_state = self.input_proj_env_state(env_state)
+                transformer_input = torch.cat([qpos, env_state], axis=1)
+            elif self.obs_type == "features":
+                transformer_input = qpos
 
             if self.multitask:
                 hs = self.transformer(
@@ -309,16 +308,12 @@ def build_encoder(args):
 def build(args):
     state_dim = args.state_dim  # 20 # TODO hardcode
 
-    # backbones = None
-    # From state
-    # backbone = None # from state for now, no need for conv nets
-    # From image
-    backbones = []
-    backbone = build_backbone(args)
-    backbones.append(backbone)
-    # for _ in args.camera_names:
-    #     backbone = build_backbone(args)
-    #     backbones.append(backbone)
+    if args.obs_type == "features":
+        backbones = None
+    elif args.obs_type == "pixels":
+        backbones = []
+        backbone = build_backbone(args)
+        backbones.append(backbone)
 
     transformer = build_transformer(args)
 
@@ -333,6 +328,7 @@ def build(args):
         num_queries=args.num_queries,
         camera_names=args.camera_names,
         multitask=args.multitask,
+        obs_type=args.obs_type,
     )
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
