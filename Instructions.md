@@ -48,7 +48,7 @@ python train.py agent=baku suite=metaworld dataloader=metaworld suite.hidden_dim
 ```
 - To train BAKU on DMControl, use the following command.
 ```
-python train.py agent=baku suite=dm_control dataloader=dm_control suite.hidden_dim=256 obs_type=features use_proprio=false
+python train.py agent=baku suite=dmc dataloader=dmc suite.hidden_dim=256 obs_type=features use_proprio=false
 ```
 
 ## Evaluate BAKU
@@ -64,3 +64,35 @@ python eval_ray.py agent=baku suite=libero dataloader=libero suite/task=libero_9
 ```
 
 Follow the same pattern for evaluation on Meta-World and DMControl.
+
+## Train Baselines
+
+### MT-ACT
+
+- To train MT-ACT on LIBERO-90, use the following command.
+```
+python train.py agent=mtact suite=libero dataloader=libero suite/task=libero_90
+```
+- To train MT-ACT on Meta-World, use the following command.
+```
+python train.py agent=mtact suite=metaworld dataloader=metaworld use_proprio=false
+```
+- To train MT-ACT on DMControl, use the following command.
+```
+python train.py agent=baku suite=dmc dataloader=dmc obs_type=features use_proprio=false
+```
+
+### RT-1
+
+- To train RT-1 on LIBERO-90, use the following command.
+```
+python train.py agent=rt1 suite=libero dataloader=libero suite/task=libero_90 suite.hidden_dim=512 suite.history=true suite.history_len=6 temporal_agg=false
+```
+- To train RT-1 on Meta-World, use the following command.
+```
+python train.py agent=rt1 suite=metaworld dataloader=metaworld suite.hidden_dim=512 use_proprio=false suite.history=true suite.history_len=6 temporal_agg=false
+```
+- To train RT-1 on DMControl, use the following command.
+```
+python train.py agent=rt1 suite=dmc dataloader=dmc suite.hidden_dim=512 obs_type=features use_proprio=false suite.history=true suite.history_len=6 temporal_agg=false
+```
