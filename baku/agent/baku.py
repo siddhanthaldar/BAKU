@@ -541,7 +541,6 @@ class BCAgent:
                 else min(len(self.observation_buffer) + 1, self.eval_history_len)
             )
             lang_features = (
-                # torch.as_tensor(obs["task_emb"], device=self.device)
                 torch.as_tensor(prompt["task_emb"], device=self.device)
                 .float()[None].repeat(repeat_len, 1)
             )
