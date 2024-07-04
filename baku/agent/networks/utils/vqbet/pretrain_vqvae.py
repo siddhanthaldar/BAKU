@@ -42,7 +42,7 @@ def pretrain_vqvae(vqvae_model, config, actions):
     from logger import Logger
 
     # create logger
-    logger = Logger(Path("."), use_tb=True, mode="ssl")
+    logger = Logger(Path("."), use_tb=True, mode="vqvae")
 
     # data
     train_data = ActionDataset(actions)

@@ -134,7 +134,7 @@ class RGBArrayAsObservationWrapper(dm_env.Environment):
     def get_frame(self, width=None, height=None):
         width = self._width if width is None else width
         height = self._height if height is None else height
-        self._env.mujoco_renderer.viewer.make_context_current()
+        # self._env.mujoco_renderer.viewer.make_context_current()
         frame = self._env.render()[::-1]
         frame = cv2.resize(frame, (width, height))
         return frame

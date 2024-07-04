@@ -22,7 +22,17 @@ BC_EVAL_FORMAT = [
     ("imitation_reward", "R_i", "float"),
     ("total_time", "T", "time"),
 ]
-
+SSL_TRAIN_FORMAT = [
+    ("step", "S", "int"),
+    ("loss", "L", "float"),
+    ("total_time", "T", "time"),
+]
+SSL_EVAL_FORMAT = [
+    ("epoch", "E", "int"),
+    ("step", "S", "int"),
+    ("loss", "E", "float"),
+    ("total_time", "T", "time"),
+]
 
 class AverageMeter(object):
     def __init__(self):
@@ -125,13 +135,24 @@ class MetersGroup(object):
 
 
 class Logger(object):
-    def __init__(self, log_dir, use_tb):
+    def __init__(self, log_dir, use_tb, mode='bc'):
         """
-        mode: bc, ssl
+        mode: bc, vqvae
         """
         self._log_dir = log_dir
-        self._train_mg = MetersGroup(log_dir / "train.csv", formating=BC_TRAIN_FORMAT)
-        self._eval_mg = MetersGroup(log_dir / "eval.csv", formating=BC_EVAL_FORMAT)
+        if mode == "bc":
+            self._train_mg = MetersGroup(
+                log_dir / "train.csv", formating=BC_TRAIN_FORMAT
+            )
+            self._eval_mg = MetersGroup(log_dir / "eval.csv", formating=BC_EVAL_FORMAT)
+        elif mode == "vqvae":
+            self._train_mg = MetersGroup(
+                log_dir / "train.csv", formating=SSL_TRAIN_FORMAT
+            )
+            self._train_vq_mg = MetersGroup(
+                log_dir / "train_vq.csv", formating=SSL_TRAIN_FORMAT
+            )
+            self._eval_mg = MetersGroup(log_dir / "eval.csv", formating=SSL_EVAL_FORMAT)
 
         if use_tb:
             self._sw = SummaryWriter(str(log_dir / "tb"))
