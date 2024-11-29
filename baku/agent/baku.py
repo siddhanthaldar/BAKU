@@ -19,6 +19,8 @@ from agent.networks.policy_head import (
 from agent.networks.gpt import GPT, GPTConfig
 from agent.networks.mlp import MLP
 from agent.networks.kmeans_discretizer import KMeansDiscretizer
+from opacus.grad_sample import GradSampleModule
+from torchinfo import summary
 
 
 class Actor(nn.Module):
@@ -85,6 +87,7 @@ class Actor(nn.Module):
                 hidden_size=hidden_dim,
                 device=device,
             )
+            # self._action_head = GradSampleModule(self._action_head)
         elif policy_head == "diffusion":
             self._action_head = DiffusionHead(
                 input_size=hidden_dim,
@@ -141,6 +144,10 @@ class Actor(nn.Module):
             stddev,
             **{"cluster_centers": cluster_centers, "action_seq": action},
         )
+        # shape of the input is ([96, 1, 256])
+        for name, param in self._action_head.named_parameters():
+            if hasattr(param, "grad_sample"):
+                print(f"Param {name} has grad sample, yaya!! ")
 
         if action is None:
             return pred_action
@@ -487,7 +494,7 @@ class BCAgent:
             self._cluster_centers = self.discretizer.bin_centers.float().to(self.device)
         elif self.policy_head == "vqbet":
             config = {
-                "epochs": 2001,
+                "epochs": 501, # default was 2001
                 "batch_size": 2048,
                 "save_every": 50,
             }

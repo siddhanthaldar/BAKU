@@ -48,9 +48,9 @@ class VqVae:
         obs_dim=60,
         input_dim_h=10,  # length of action chunk
         input_dim_w=9,  # action dim
-        n_latent_dims=512,
-        vqvae_n_embed=32,
-        vqvae_groups=4,
+        n_latent_dims=512, # latent dim
+        vqvae_n_embed=32, # number of embeddings
+        vqvae_groups=4,  # number of quantizers
         eval=True,
         device="cuda",
         load_dir=None,

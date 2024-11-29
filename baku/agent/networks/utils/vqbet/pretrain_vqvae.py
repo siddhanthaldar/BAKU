@@ -45,6 +45,8 @@ def pretrain_vqvae(vqvae_model, config, actions):
     logger = Logger(Path("."), use_tb=True, mode="vqvae")
 
     # data
+    print(f"Actions are {len(actions)}")
+    print(f"Action shape is {actions[0].shape}, {actions[10].shape}, {actions[100].shape}")
     train_data = ActionDataset(actions)
     train_loader = torch.utils.data.DataLoader(
         train_data, batch_size=config["batch_size"], shuffle=True, pin_memory=False

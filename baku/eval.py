@@ -16,6 +16,7 @@ import utils
 from logger import Logger
 from replay_buffer import make_expert_replay_loader
 from video import VideoRecorder
+import pickle
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 torch.backends.cudnn.benchmark = True
@@ -97,17 +98,18 @@ class WorkspaceIL:
         self.agent.train(False)
         episode_rewards = []
         successes = []
+        actions_taken = {}
         for env_idx in range(self.envs_till_idx):
             print(f"evaluating env {env_idx}")
             episode, total_reward = 0, 0
             eval_until_episode = utils.Until(self.cfg.suite.num_eval_episodes)
             success = []
-
+            actions_taken[env_idx] = {}
             while eval_until_episode(episode):
                 time_step = self.env[env_idx].reset()
                 self.agent.buffer_reset()
                 step = 0
-
+                actions_taken[env_idx][episode] = {}
                 # prompt
                 if self.cfg.prompt != None and self.cfg.prompt != "intermediate_goal":
                     prompt = self.expert_replay_loader.dataset.sample_test(env_idx)
@@ -133,6 +135,7 @@ class WorkspaceIL:
                             eval_mode=True,
                         )
                     time_step = self.env[env_idx].step(action)
+                    actions_taken[env_idx][episode][step] = action
                     self.video_recorder.record(self.env[env_idx])
                     total_reward += time_step.reward
                     step += 1
@@ -146,6 +149,9 @@ class WorkspaceIL:
             episode_rewards.append(total_reward / episode)
             successes.append(np.mean(success))
 
+        # save the actions_taken
+        with open(f"{self.global_frame}_actions_taken.pkl", "wb") as f:
+            pickle.dump(actions_taken, f)
         for _ in range(len(self.env) - self.envs_till_idx):
             episode_rewards.append(0)
             successes.append(0)

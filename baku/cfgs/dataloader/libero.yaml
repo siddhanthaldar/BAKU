@@ -1,6 +1,6 @@
 bc_dataset:
   _target_: read_data.libero.BCDataset
-  path: "${root_dir}/expert_demos/libero"
+  path: "/home/shared_data/data_attrib_data/pkl_libero/"
   suite: ${suite.task.suite}
   scenes: ${suite.task.scenes}
   tasks: ${suite.task.tasks}

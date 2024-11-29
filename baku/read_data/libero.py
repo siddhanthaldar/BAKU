@@ -70,6 +70,7 @@ class BCDataset(IterableDataset):
         # read data
         self._episodes = {}
         self._max_episode_len = 0
+        self._min_episode_len = float("inf")
         self._max_state_dim = 0
         self._num_samples = 0
         for _path_idx in self._paths:
@@ -92,6 +93,14 @@ class BCDataset(IterableDataset):
                 self._episodes[_path_idx].append(episode)
                 self._max_episode_len = max(
                     self._max_episode_len,
+                    (
+                        len(observations[i])
+                        if not isinstance(observations[i], dict)
+                        else len(observations[i]["pixels"])
+                    ),
+                )
+                self._min_episode_len = min(
+                    self._min_episode_len,
                     (
                         len(observations[i])
                         if not isinstance(observations[i], dict)
