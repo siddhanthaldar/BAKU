@@ -21,8 +21,9 @@ from agent.networks.mlp import MLP
 from agent.networks.kmeans_discretizer import KMeansDiscretizer
 from opacus.grad_sample import GradSampleModule
 from torchinfo import summary
-
-
+from muon import Muon
+import os
+import torch.distributed as dist
 class Actor(nn.Module):
     def __init__(
         self,
@@ -193,6 +194,7 @@ class BCAgent:
         prompt,
         use_language,
         film,
+        use_muon,
     ):
         self.device = device
         self.lr = lr
@@ -214,6 +216,20 @@ class BCAgent:
         self.language_proj_type = "mlp"  # mlp or identity
         self.prompt = prompt
         self.film = film
+        self.use_muon = use_muon
+
+        # Set environment variables for distributed processing
+        os.environ['MASTER_ADDR'] = 'localhost'
+        os.environ['MASTER_PORT'] = '12355'
+        
+        # Initialize distributed processing for Muon
+        if not dist.is_initialized():
+            dist.init_process_group(
+                backend='nccl' if torch.cuda.is_available() else 'gloo',
+                init_method='env://',
+                world_size=1,
+                rank=0
+            )
 
         # language
         self.language_fusion = "none" if not self.use_language else "film"
@@ -392,9 +408,17 @@ class BCAgent:
                 self.language_projector.parameters(), lr=lr, weight_decay=1e-4
             )
         # actor
-        self.actor_opt = torch.optim.AdamW(
-            self.actor.parameters(), lr=lr, weight_decay=1e-4
-        )
+        if self.use_muon:
+            muon_params = [p for p in self.actor.parameters() if p.ndim >= 2]
+            adamw_params = [p for p in self.actor.parameters() if p.ndim < 2]
+            self.actor_opt = [
+                Muon(muon_params, lr=lr, momentum=0.95),
+                torch.optim.AdamW(adamw_params, lr=lr, weight_decay=1e-4)
+            ]
+        else:
+            self.actor_opt = torch.optim.AdamW(
+                self.actor.parameters(), lr=lr, weight_decay=1e-4
+            )
 
         # augmentations
         if obs_type == "pixels" and self.norm:
@@ -520,9 +544,17 @@ class BCAgent:
                 self.language_projector.parameters(), lr=self.lr, weight_decay=1e-4
             )
         params = list(self.actor.parameters())
-        self.actor_opt = torch.optim.AdamW(
-            self.actor.parameters(), lr=self.lr, weight_decay=1e-4
-        )
+        if self.use_muon:
+            muon_params = [p for p in self.actor.parameters() if p.ndim >= 2]
+            adamw_params = [p for p in self.actor.parameters() if p.ndim < 2]
+            self.actor_opt = [
+                Muon(muon_params, lr=self.lr, momentum=0.95),
+                torch.optim.AdamW(adamw_params, lr=self.lr, weight_decay=1e-4)
+            ]
+        else:
+            self.actor_opt = torch.optim.AdamW(
+                self.actor.parameters(), lr=self.lr, weight_decay=1e-4
+            )
 
     def act(self, obs, prompt, norm_stats, step, global_step, eval_mode=False):
         if norm_stats is not None:
@@ -681,6 +713,7 @@ class BCAgent:
         metrics = dict()
 
         batch = next(expert_replay_iter)
+        # removing the skill name from the batch after this step, see utils.py
         data = utils.to_torch(batch, self.device)
         action = data["actions"].float()
 
@@ -827,15 +860,27 @@ class BCAgent:
                 self.proprio_opt.zero_grad(set_to_none=True)
             if self.use_language:
                 self.language_opt.zero_grad(set_to_none=True)
-            self.actor_opt.zero_grad(set_to_none=True)
+            # actor_opt can be a list of optimizers when using Muon
+            if isinstance(self.actor_opt, list):
+                for opt in self.actor_opt:
+                    opt.zero_grad(set_to_none=True)
+            else:
+                self.actor_opt.zero_grad(set_to_none=True)
+
             actor_loss["actor_loss"].backward()
+
             if self.train_encoder:
                 self.encoder_opt.step()
             if self.obs_type == "pixels" and self.use_proprio:
                 self.proprio_opt.step()
             if self.use_language:
                 self.language_opt.step()
-            self.actor_opt.step()
+            # actor_opt can be a list of optimizers when using Muon
+            if isinstance(self.actor_opt, list):
+                for opt in self.actor_opt:
+                    opt.step()
+            else:
+                self.actor_opt.step()
 
             if self.policy_head == "diffusion" and step % 10 == 0:
                 self.actor._action_head.net.ema_step()
@@ -893,6 +938,27 @@ class BCAgent:
                 payload["encoder"] = self.encoder.state_dict()
         # optimizers
         payload.update({k: self.__dict__[k] for k in opt_keys})
+        if "actor_opt" in payload and isinstance(self.actor_opt, list):
+            for i, opt in enumerate(self.actor_opt):
+                payload[f"actor_opt_{i}"] = opt.state_dict()
+            payload["use_muon_actor_opt"] = True
+        elif "actor_opt" in payload:
+            payload["actor_opt"] = self.actor_opt.state_dict()
+            payload["use_muon_actor_opt"] = False
+        del payload["actor_opt"] # remove the original actor_opt key as it might be ambiguous now
+        # augmentations
+        if self.obs_type == "pixels" and self.norm:
+            if self.encoder_type == "small":
+                MEAN = torch.tensor([0.0, 0.0, 0.0])
+                STD = torch.tensor([1.0, 1.0, 1.0])
+            elif self.encoder_type == "resnet" or self.norm:
+                MEAN = torch.tensor([0.485, 0.456, 0.406])
+                STD = torch.tensor([0.229, 0.224, 0.225])
+            self.customAug = T.Compose([T.Normalize(mean=MEAN, std=STD)])
+
+        # data augmentation
+        if self.obs_type == "pixels" and self.augment:
+            self.test_aug = T.Compose([T.ToPILImage(), T.ToTensor()])
 
         if self.policy_head == "bet":
             payload["cluster_centers"] = self._cluster_centers
@@ -917,9 +983,9 @@ class BCAgent:
         for k in model_keys:
             if k == "encoder" and self.separate_encoders:
                 for key in self.pixel_keys:
-                    self.encoder[key].load_state_dict(payload[f"encoder_{key}"])
+                    self.encoder[key].load_state_dict(payload[f"encoder_{key}"], strict=False)
             else:
-                self.__dict__[k].load_state_dict(payload[k])
+                self.__dict__[k].load_state_dict(payload[k], strict=False)
 
         if self.policy_head == "bet":
             assert "cluster_centers" in payload
@@ -945,6 +1011,149 @@ class BCAgent:
                 opt_keys += ["proprio_opt"]
             if self.use_language:
                 opt_keys += ["language_opt"]
-            for k in opt_keys:
-                self.__dict__[k] = payload[k]
+            if payload["use_muon_actor_opt"]:
+                self.actor_opt = []
+                i = 0
+                while f"actor_opt_{i}" in payload:
+                    muon_adamw_opt_state_dict = payload[f"actor_opt_{i}"]
+                    if i == 0: # Muon optimizer
+                        muon_params = [p for p in self.actor.parameters() if p.ndim >= 2]
+                        opt = Muon(muon_params, lr=self.lr, momentum=0.95) # need to re-init optimizer and load state_dict
+                    elif i == 1: # AdamW optimizer
+                        adamw_params = [p for p in self.actor.parameters() if p.ndim < 2]
+                        opt = torch.optim.AdamW(adamw_params, lr=self.lr, weight_decay=1e-4) # need to re-init optimizer and load state_dict
+                    opt.load_state_dict(muon_adamw_opt_state_dict)
+                    self.actor_opt.append(opt)
+                    i += 1
+            else:
+                actor_opt_state_dict = payload["actor_opt"]
+                self.actor_opt = torch.optim.AdamW(
+                    self.actor.parameters(), lr=self.lr, weight_decay=1e-4
+                ) # need to re-init optimizer and load state_dict
+                self.actor_opt.load_state_dict(actor_opt_state_dict)
+            del payload["actor_opt_0"]
+            del payload["actor_opt_1"]
+            del payload["use_muon_actor_opt"]
         self.train(True)
+
+    def compute_loss(self, data, step):
+        """Compute loss without performing optimization steps."""
+        # Convert data to torch tensors
+        data = utils.to_torch(data, self.device)
+        action = data["actions"].float()
+
+        # lang projection
+        if self.use_language:
+            lang_features = (
+                data["task_emb"].float()[:, None].repeat(1, self.history_len, 1)
+            )
+            lang_features = self.language_projector(lang_features)
+            lang_features = einops.rearrange(lang_features, "b t d -> (b t) d")
+        else:
+            lang_features = None
+
+        # features
+        if self.obs_type == "pixels":
+            features = []
+            for key in self.pixel_keys:
+                pixel = data[key].float()
+                shape = pixel.shape
+                # rearrange
+                pixel = einops.rearrange(pixel, "b t c h w -> (b t) c h w")
+                # augment
+                pixel = self.customAug(pixel / 255.0) if self.norm else pixel
+                # encode
+                lang = lang_features if self.film else None
+                with torch.no_grad():  # Don't compute gradients during validation
+                    pixel = (
+                        self.encoder[key](pixel, lang=lang)
+                        if self.separate_encoders
+                        else self.encoder(pixel, lang=lang)
+                    )
+                pixel = einops.rearrange(pixel, "(b t) d -> b t d", t=shape[1])
+                features.append(pixel)
+            if self.use_proprio:
+                proprio = data[self.proprio_key].float()
+                with torch.no_grad():
+                    proprio = self.proprio_projector(proprio)
+                features.append(proprio)
+            # concatenate
+            features = torch.cat(features, dim=-1).view(
+                action.shape[0], -1, self.repr_dim
+            )
+        else:
+            features = data[self.feature_key].float()
+            shape = features.shape
+            with torch.no_grad():
+                features = self.encoder(features)
+
+        # prompt
+        prompt_features = []
+        if self.use_language:
+            lang_features = einops.rearrange(
+                lang_features, "(b t) d -> b t d", t=shape[1]
+            )
+            prompt_features.append(lang_features[:, -1:])
+        if self.prompt not in [None, "text", "one_hot"]:
+            if self.use_language:
+                prompt_lang_features = lang_features[:, -1:]
+                reshape_lang = True
+            else:
+                prompt_lang_features = None
+
+            if self.obs_type == "pixels":
+                for key in self.pixel_keys:
+                    pixel = data[f"prompt_{key}"].float()
+                    shape = pixel.shape
+                    if self.use_language and reshape_lang:
+                        prompt_lang_features = prompt_lang_features.repeat(
+                            1, shape[1], 1
+                        )
+                        prompt_lang_features = einops.rearrange(
+                            prompt_lang_features, "b t d -> (b t) d"
+                        )
+                        reshape_lang = False
+                    pixel = einops.rearrange(pixel, "b t c h w -> (b t) c h w")
+                    pixel = self.customAug(pixel / 255.0) if self.norm else pixel
+                    with torch.no_grad():
+                        pixel = (
+                            self.encoder[key](pixel, lang=prompt_lang_features)
+                            if self.separate_encoders
+                            else self.encoder(pixel, lang=prompt_lang_features)
+                        )
+                    pixel = einops.rearrange(pixel, "(b t) d -> b t d", t=shape[1])
+                    prompt_features.append(pixel)
+                if self.use_proprio:
+                    proprio = data[f"prompt_{self.proprio_key}"].float()
+                    with torch.no_grad():
+                        proprio = self.proprio_projector(proprio)
+                    prompt_features.append(proprio)
+            else:
+                prompt_feat = data[f"prompt_{self.feature_key}"].float()
+                with torch.no_grad():
+                    prompt_feat = self.encoder(prompt_feat)
+                prompt_features.append(prompt_feat)
+
+        num_prompt_feats = len(prompt_features) if len(prompt_features) > 0 else 0
+        if num_prompt_feats > 0:
+            prompt_features = torch.cat(prompt_features, dim=-1).view(
+                action.shape[0], -1, self.repr_dim
+            )
+            features = torch.cat([prompt_features, features], dim=1)
+
+        if self.temporal_agg:
+            action = einops.rearrange(action, "b t1 t2 d -> b t1 (t2 d)")
+
+        # Pass cluster center to actor for bet
+        kwargs = {}
+        if self.policy_head == "bet":
+            kwargs["cluster_centers"] = self._cluster_centers
+
+        # Compute actor loss without gradients
+        with torch.no_grad():
+            stddev = utils.schedule(self.stddev_schedule, step)
+            _, actor_loss = self.actor(
+                features, num_prompt_feats, stddev, action, **kwargs
+            )
+
+        return actor_loss
