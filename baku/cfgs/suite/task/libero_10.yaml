@@ -1,4 +1,4 @@
-defaults:
+cursdefaults:
   - _self_
 
 suite: 'libero_10'

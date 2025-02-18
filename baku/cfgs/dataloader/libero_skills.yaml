@@ -1,0 +1,23 @@
+bc_dataset:
+  # _target_: read_data.libero.BCDataset
+  # _target_: read_data.libero_weighted_skills.WeightedSkillDataset
+  _target_: read_data.libero_temp_weighted_skills.WeightedSkillDataset
+  path: "/home/shared_data/data_attrib_data/pkl_libero/libero_90/skill_datasets/"
+  suite: ${suite.task.suite}
+
+  skills: ["rotating", "reaching", "pushing", "pulling", "post-placement", "placing", "picking"]
+  temperature: 3.5
+  # scenes: ${suite.task.scenes}
+  # tasks: ${suite.task.tasks}
+  # num_demos_per_task: ${num_demos_per_task}
+  obs_type: ${obs_type}
+  history: ${suite.history}
+  history_len: ${suite.history_len}
+  prompt: ${prompt}
+  temporal_agg: ${temporal_agg}
+  weights: {"rotating": 0.1, "reaching": 0.2, "pushing": 0.1, "pulling": 0.1, "post-placement": 0.1, "placing": 0.2, "picking": 0.2}
+  batch_size: 128
+  num_queries: ${num_queries}
+  intermediate_goal_step: 50
+  img_size: 128
+  store_actions: true

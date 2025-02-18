@@ -1,5 +1,6 @@
 bc_dataset:
   _target_: read_data.libero.BCDataset
+  # _target_: read_data.libero_skills.SkillDataset
   path: "/home/shared_data/data_attrib_data/pkl_libero/"
   suite: ${suite.task.suite}
   scenes: ${suite.task.scenes}

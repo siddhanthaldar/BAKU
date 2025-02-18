@@ -233,7 +233,7 @@ class BCAgent:
 
         # language
         self.language_fusion = "none" if not self.use_language else "film"
-        self.language_dim = 384
+        self.language_dim = 768
         self.lang_repr_dim = 512
 
         # actor parameters
@@ -254,7 +254,7 @@ class BCAgent:
         # number of inputs per time step
         if obs_type == "features":
             num_feat_per_step = 1
-        elif obs_type == "pixels":
+        elif obs_type == "pixels":  # TODO: change to use_proprio
             num_feat_per_step = len(self.pixel_keys)
             if use_proprio:
                 num_feat_per_step += 1
@@ -716,7 +716,6 @@ class BCAgent:
         # removing the skill name from the batch after this step, see utils.py
         data = utils.to_torch(batch, self.device)
         action = data["actions"].float()
-
         # lang projection
         if self.use_language:
             lang_features = (

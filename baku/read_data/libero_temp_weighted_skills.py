@@ -2,7 +2,7 @@ import random
 import numpy as np
 import pickle as pkl
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, List
 from collections import defaultdict
 
 import torch
@@ -27,7 +27,8 @@ class WeightedSkillDataset(IterableDataset):
         temperature: float = 3.5,  # Added temperature parameter
         weights: Optional[Dict[str, float]] = None,
         intermediate_goal_step=50,
-        store_actions: bool=False
+        store_actions: bool=False,
+        validation_split: float = 0.1  # Added validation split parameter
     ):
         self._obs_type = obs_type
         self._prompt = prompt
@@ -115,6 +116,28 @@ class WeightedSkillDataset(IterableDataset):
 
         # Store total number of skills
         self.num_skills = len(self._demonstrations)
+
+        # Create validation set
+        self._validation_demos = {}
+        self._train_demos = {}
+        
+        for skill_name, demonstrations in self._demonstrations.items():
+            # Determine split index
+            n_demos = len(demonstrations)
+            n_val = max(1, int(n_demos * validation_split))
+            
+            # Create validation set (fixed seed for reproducibility)
+            rng = np.random.RandomState(42)
+            val_indices = rng.choice(n_demos, n_val, replace=False)
+            train_indices = np.array([i for i in range(n_demos) if i not in val_indices])
+            
+            self._validation_demos[skill_name] = [demonstrations[i] for i in val_indices]
+            self._train_demos[skill_name] = [demonstrations[i] for i in train_indices]
+            
+            print(f"Skill {skill_name}: {len(self._train_demos[skill_name])} train, {len(self._validation_demos[skill_name])} validation demonstrations")
+        
+        # Use training demos as default
+        self._demonstrations = self._train_demos
 
     def _compute_sampling_probs(self) -> Dict[str, float]:
         """
@@ -424,13 +447,64 @@ class WeightedSkillDataset(IterableDataset):
     def get_base_weights(self) -> Dict[str, float]:
         """Return current base weights before temperature adjustment."""
         return self._base_weights.copy()
-    
-import torch
-from torch.utils.data import DataLoader
-import numpy as np
-from pathlib import Path
-import time
-import argparse
+
+    def get_validation_batch(self, batch_size: Optional[int] = None) -> List[Dict]:
+        """Get a batch of validation samples."""
+        if batch_size is None:
+            batch_size = self.batch_size
+            
+        batch_samples = []
+        batch_distribution = self.sample_batch_distribution()
+        
+        for skill, count in batch_distribution.items():
+            if not self._validation_demos[skill]:
+                continue
+                
+            for _ in range(count):
+                demo = random.choice(self._validation_demos[skill])
+                sample = self._process_sample(demo, skill)
+                if sample is not None:
+                    batch_samples.append(sample)
+                    
+                if len(batch_samples) >= batch_size:
+                    break
+                    
+            if len(batch_samples) >= batch_size:
+                break
+                
+        return batch_samples[:batch_size]
+
+    def get_validation_batch_per_skill(self, batch_size_per_skill: int = 32) -> Dict[str, List[Dict]]:
+        """Get validation batches separately for each skill.
+        
+        Args:
+            batch_size_per_skill: Number of samples to get for each skill
+            
+        Returns:
+            Dict mapping skill names to lists of validation samples
+        """
+        validation_batches = {}
+        
+        for skill_name, demos in self._validation_demos.items():
+            skill_samples = []
+            attempts = 0
+            max_attempts = batch_size_per_skill * 2
+            
+            while len(skill_samples) < batch_size_per_skill and attempts < max_attempts:
+                demo = random.choice(demos)
+                sample = self._process_sample(demo, skill_name)
+                if sample is not None:
+                    skill_samples.append(sample)
+                attempts += 1
+            
+            if skill_samples:  # Only include skills with valid samples
+                validation_batches[skill_name] = skill_samples
+                
+        return validation_batches
+
+    def get_skill_names(self) -> List[str]:
+        """Return list of all skill names."""
+        return list(self._demonstrations.keys())
 
 
 def test_dataset(args):

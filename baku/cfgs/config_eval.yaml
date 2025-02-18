@@ -10,7 +10,7 @@ root_dir: /home/bpatil/workspace/BAKU
 
 # misc
 seed: 2
-device: cuda:0
+device: cuda:1
 save_video: true
 save_train_video: false
 use_tb: true
@@ -21,7 +21,7 @@ obs_type: "pixels" # pixels, features
 num_demos_per_task: 50
 encoder_type: 'resnet' # base, resnet
 policy_type: 'gpt' # mlp, gpt
-policy_head: vqbet # deterministic, gmm, bet, diffusion, vqbet
+policy_head: deterministic # deterministic, gmm, bet, diffusion, vqbet
 use_proprio: true
 use_language: true
 use_actions: false

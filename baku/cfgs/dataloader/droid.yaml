@@ -1,0 +1,13 @@
+bc_dataset:
+  _target_: read_data.droid.BCDataset
+  path: ${suite.path}
+  num_demos: ${suite.num_demos}
+  obs_type: ${obs_type}
+  history: ${suite.history}
+  history_len: ${suite.history_len}
+  prompt: ${prompt}
+  temporal_agg: ${temporal_agg}
+  num_queries: ${num_queries}
+  img_size: ${suite.img_size}
+  intermediate_goal_step: ${suite.intermediate_goal_step}
+  store_actions: ${suite.store_actions}

@@ -1,0 +1,62 @@
+# @package suite
+defaults:
+  - _self_
+  - task: droid_100
+
+suite: droid
+name: "droid"
+
+# dataset settings
+path: "/home/bpatil/workspace/skill_seg/skill_seg/data/"
+num_demos: 100
+obs_type: "pixels"
+history: false
+history_len: 2
+prompt: null
+temporal_agg: true
+num_queries: 10
+img_size: 224
+intermediate_goal_step: 30
+store_actions: false
+max_episode_len: 400
+
+
+# task settings
+frame_stack: 1
+action_repeat: 1
+discount: 0.99
+hidden_dim: 256
+
+# train settings
+num_train_steps: 801000
+log_every_steps: 1000
+save_every_steps: 25000
+
+# eval
+eval_every_steps: 200000
+num_eval_episodes: 10
+eval_history_len: 5
+
+# obs_keys
+pixel_keys: ["pixels", "pixels_egocentric"]
+proprio_key: "proprioceptive"
+feature_key: "features"
+
+# snapshot
+save_snapshot: true
+
+task_make_fn:
+  _target_: suite.droid.make
+  path: ${data_dir}/droid  # This will be specified in the global config
+  num_demos: ${suite.num_demos}
+  obs_type: ${suite.obs_type}
+  history: ${suite.history}
+  history_len: ${suite.history_len}
+  prompt: ${suite.prompt}
+  temporal_agg: ${suite.temporal_agg}
+  num_queries: ${suite.num_queries}
+  img_size: ${suite.img_size}
+  max_episode_len: ${suite.max_episode_len}
+  intermediate_goal_step: ${suite.intermediate_goal_step}
+  store_actions: ${suite.store_actions}
+  seed: ${seed}  # This will be specified in the global config
